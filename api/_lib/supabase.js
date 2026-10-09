@@ -1,16 +1,21 @@
-Attempting to perform the InitializeDefaultDrives operation on the 'FileSystem' provider failed.
 const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-export function hasSupabase() { return Boolean(url && serviceKey); }
+export function hasSupabase() { return Boolean(url && publishableKey); }
 
-async function request(path, options = {}) {
+export function requireBearer(req) {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) { const error = new Error('Faça login para acessar seus projetos.'); error.statusCode = 401; throw error; }
+  return header;
+}
+
+async function request(path, options = {}, bearer) {
   if (!hasSupabase()) throw new Error('Supabase ainda não foi configurado na Vercel.');
   const response = await fetch(`${url}/rest/v1/${path}`, {
     ...options,
     headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
+      apikey: publishableKey,
+      Authorization: bearer,
       'Content-Type': 'application/json',
       ...(options.headers || {})
     }
@@ -19,9 +24,7 @@ async function request(path, options = {}) {
   return response.status === 204 ? null : response.json();
 }
 
-export function listProjects() { return request('projects?select=*&order=updated_at.desc'); }
-export function getProject(id) { return request(`projects?id=eq.${encodeURIComponent(id)}&select=*`).then((rows) => rows[0] || null); }
-export function saveProject(project) { return request('projects', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify({ id: project.id || undefined, name: project.name || 'Sem título', payload: project, updated_at: new Date().toISOString() }) }).then((rows) => rows[0]); }
-export function deleteProject(id) { return request(`projects?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }); }
-
-
+export function listProjects(bearer) { return request('projects?select=*&order=updated_at.desc', {}, bearer); }
+export function getProject(id, bearer) { return request(`projects?id=eq.${encodeURIComponent(id)}&select=*`, {}, bearer).then((rows) => rows[0] || null); }
+export function saveProject(project, bearer) { return request('projects', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify({ id: project.id || undefined, name: project.name || 'Sem título', payload: project, updated_at: new Date().toISOString() }) }, bearer).then((rows) => rows[0]); }
+export function deleteProject(id, bearer) { return request(`projects?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }, bearer); }
