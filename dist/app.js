@@ -130,3 +130,5 @@ $('#loginBtn').onclick = () => submitAuth('login'); $('#signupBtn').onclick = ()
 hydrate({ ...state, scenes: initialScenes, name: 'A luz certa muda tudo' });
 bootstrapAuth();
 updateAiStatus();
+
+
