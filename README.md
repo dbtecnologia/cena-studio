@@ -41,7 +41,7 @@ O repositório está em [github.com/dbtecnologia/cena-studio](https://github.com
 SUPABASE_URL=https://qikqeooekngjrhwajwut.supabase.co
 SUPABASE_PUBLISHABLE_KEY=<chave publishable/anon do projeto>
 GEMINI_API_KEY=<opcional, servidor>
-GEMINI_TEXT_MODEL=gemini-2.5-flash
+GEMINI_TEXT_MODEL=gemini-3.8-flash
 GEMINI_TTS_MODEL=gemini-2.5-flash-preview-tts
 ```
 
@@ -65,7 +65,7 @@ Copie `.env.example` para `.env` e exporte as variáveis no terminal do servidor
 
 ```powershell
 $env:GEMINI_API_KEY = "sua-chave-do-google-ai-studio"
-$env:GEMINI_TEXT_MODEL = "gemini-2.5-flash"
+$env:GEMINI_TEXT_MODEL = "gemini-3.8-flash"
 $env:GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
 node server/server.mjs
 ```
@@ -107,3 +107,5 @@ O Gemini TTS documentado retorna áudio, mas não é usado como fonte de timesta
 - Sem FFmpeg instalado, o botão renderiza um WebM local com imagens, movimento e textos; MP4 exige FFmpeg e o worker.
 - O worker atual gera a base MP4 da fila. Para produção, o próximo passo é persistir uploads em `data/uploads` e passar cada asset, movimento e mixagem para o comando FFmpeg.
 - O repositório começou vazio; por isso a versão local opta por uma SPA buildless sem depender de npm, preservando o backend Node/SQLite/worker do briefing.
+
+
