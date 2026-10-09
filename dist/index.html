@@ -41,7 +41,7 @@
               <div class="voice-row"><select id="voice"><option value="Aoede">Aoede · serena</option><option value="Kore">Kore · clara</option><option value="Puck">Puck · jovem</option><option value="Charon">Charon · grave</option></select><button class="listen-button" id="listenVoiceBtn" title="Ouvir amostra">▶</button></div>
               <div class="mode-switch"><button class="mode selected" data-mode="animated"><span class="mode-icon">▧</span><span><b>Imagens animadas</b><small>Seu arquivo + movimento local</small></span></button><button class="mode" data-mode="ai-video"><span class="mode-icon">✦</span><span><b>Clipe gerado por IA</b><small id="videoAvailability">IA opcional · fallback local</small></span></button></div>
               <button class="primary-button" id="generateBtn"><span class="spark">✦</span> Gerar roteiro <span class="button-arrow">↗</span></button>
-              <div class="privacy-note"><span>⌁</span> As chaves ficam no servidor.<br />O modo local não envia seus arquivos.</div>
+              <div class="privacy-note"><span>⌁</span><span id="aiStatus">Verificando conexão com a IA…</span><br />O modo local não envia seus arquivos.</div>
             </aside>
 
             <section class="scenes-panel panel">
@@ -71,6 +71,6 @@
     </div>
     <div class="auth-gate" id="authGate" hidden><div class="auth-card"><span class="brand-mark">C</span><p class="eyebrow">cena / acesso</p><h2>Seus projetos,<br /><em>no seu espaço.</em></h2><p>Entre para salvar projetos com segurança no Supabase. O modo local continua disponível sem conta.</p><input id="authEmail" type="email" placeholder="seu@email.com" autocomplete="email" /><input id="authPassword" type="password" placeholder="senha com 6+ caracteres" autocomplete="current-password" /><div class="auth-actions"><button id="loginBtn" class="primary-button">Entrar</button><button id="signupBtn" class="ghost-button">Criar conta</button></div><button id="continueLocalBtn" class="text-button">Continuar só neste navegador</button><small id="authMessage"></small></div></div>
     <div class="toast-stack" id="toastStack" aria-live="polite"></div>
-    <script>window.CENA_HOSTED = window.top !== window.self || location.hostname.endsWith('vercel.app');</script><script src="/app.js?v=20261009-3" type="module"></script>
+    <script>window.CENA_HOSTED = window.top !== window.self || location.hostname.endsWith('vercel.app');</script><script src="/app.js?v=20261009-4" type="module"></script>
   </body>
 </html>
