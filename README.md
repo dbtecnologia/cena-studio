@@ -8,13 +8,13 @@ MVP pessoal para transformar uma ideia em roteiro, cenas, narração e vídeo. A
 - Geração de roteiro via Gemini Developer API quando `GEMINI_API_KEY` está configurada.
 - Fallback de rascunho local, identificado na interface, quando a chave não existe ou a cota falha.
 - Cenas editáveis, reordenação, exclusão, adição manual e seleção no monitor.
-- Upload de imagens, vídeos e áudios próprios; os arquivos permanecem no navegador durante a sessão.
+- Upload de imagens, vídeos e áudios próprios; imagens enviadas entram na composição com zoom/pan e os arquivos permanecem no navegador durante a sessão.
 - Narração: endpoint de Gemini TTS no servidor; amostra local usa a voz do navegador.
 - Exportação de SRT a partir da timeline de cenas; alinhamento palavra a palavra fica preparado para `whisper.cpp`.
 - SQLite via `node:sqlite`, fila persistente em `data/queue` e worker separado.
 - Deploy hospedável preparado em Vercel com Functions para Gemini/Supabase e autenticação por e-mail/senha.
 - Supabase com RLS por usuário; a chave `service_role` não é usada no navegador nem nos endpoints públicos.
-- Renderização fora da requisição HTTP com FFmpeg local. O worker produz um MP4-base e está pronto para receber os assets do projeto.
+- Renderização no navegador em WebM funciona sem FFmpeg; quando FFmpeg e o worker estão disponíveis, a fila produz MP4 fora da requisição HTTP.
 - Tela de provedores com classificação: camada Free recorrente, créditos de teste e modelo open source local.
 
 ## Rodar localmente
@@ -83,15 +83,18 @@ Os links abaixo são documentação oficial. “Free tier” quer dizer camada g
 | [Gemini Image / Imagen](https://ai.google.dev/gemini-api/docs/imagen) | Imagens IA | Pago / não confirmado no Free | Imagen 3 está disponível no Paid tier; a geração de imagens Gemini/Imagen não é tratada como grátis pelo MVP | Sim para Paid | Desligado; use uploads ou modelo local |
 | [Veo](https://ai.google.dev/gemini-api/docs/veo) | Clipes de vídeo IA | Pago | A documentação de pricing lista vídeo nos tiers pagos; não há camada gratuita API confirmada | Sim para Paid | Opcional e bloqueado por padrão |
 | [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers/en/pricing) | Texto, imagem e áudio via provedores | Créditos gratuitos de teste recorrentes | Conta Free recebe US$ 0,10/mês, sujeito a mudança; após o crédito o uso é pay-as-you-go | Não para o crédito; pode pagar depois | Não habilitado por padrão para evitar cobrança após a cota |
+| [GitHub REST API](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api) | Informações públicas e catálogo de repositórios | API gratuita | 60 req/h sem autenticação; até 5.000 req/h autenticada | Não | Consulta projetos/modelos abertos; não gera roteiro, imagem ou vídeo |
+| [GitHub Models](https://docs.github.com/en/github-models) | IA via GitHub | Encerrado | A documentação oficial informa aposentadoria em 30/07/2026 | Não | Não utilizado; não inventamos endpoint alternativo |
 | [Piper](https://github.com/rhasspy/piper) + [vozes pt-BR](https://github.com/rhasspy/piper/blob/master/VOICES.md) | Voz local | Open source local | Sem API ou cobrança; usa recursos do computador. Existem vozes `pt_BR` como cadu, edresson, faber e jeff | Não | Alternativa documentada |
 | [whisper.cpp](https://github.com/ggml-org/whisper.cpp) | Transcrição e timestamps | Open source local | Sem API ou cobrança; modelos rodam no computador e podem produzir SRT/JSON com timestamps | Não | Alternativa documentada |
 | [FLUX.1 schnell](https://github.com/black-forest-labs/flux) | Imagem local | Open weights local | Sem API; baixa pesos e usa CPU/GPU. FLUX.1 schnell é Apache-2.0; o hardware limita velocidade | Não | Alternativa documentada |
+| [LTX-Video](https://github.com/Lightricks/LTX-Video) | Clipe texto/imagem-para-vídeo local | Open source local | Sem API; exige instalação, modelos grandes e GPU/VRAM compatível | Não | Alternativa opcional; não é API hospedada gratuita |
 
 ### Decisões de segurança de cobrança
 
 - Nenhum código chama endpoint de pagamento, cadastra cartão ou sobe automaticamente de tier.
 - Ao receber erro de cota/chave, o app informa o usuário e cai para rascunho local ou arquivos próprios.
-- O modo de clipe IA não tenta contornar limites, não usa endpoint não oficial e mostra “provedor não configurado”.
+- O modo de clipe IA não tenta contornar limites nem usa endpoint não oficial. Sem provedor configurado, ele usa fallback local com movimento e arquivos próprios, claramente identificado como não sendo geração IA.
 - Hugging Face aparece na pesquisa somente como crédito de teste; não é ativado para evitar uso pago depois do crédito.
 
 ## Voz, transcrição e sincronização
@@ -101,8 +104,6 @@ O Gemini TTS documentado retorna áudio, mas não é usado como fonte de timesta
 ## Limitações conhecidas
 
 - Sem chave, o roteiro usa um rascunho determinístico local; isso não é apresentado como geração real.
-- Sem FFmpeg instalado, a fila registra erro e orienta a instalação; não existe renderização falsa de MP4.
+- Sem FFmpeg instalado, o botão renderiza um WebM local com imagens, movimento e textos; MP4 exige FFmpeg e o worker.
 - O worker atual gera a base MP4 da fila. Para produção, o próximo passo é persistir uploads em `data/uploads` e passar cada asset, movimento e mixagem para o comando FFmpeg.
 - O repositório começou vazio; por isso a versão local opta por uma SPA buildless sem depender de npm, preservando o backend Node/SQLite/worker do briefing.
-
-
