@@ -1,0 +1,78 @@
+Attempting to perform the InitializeDefaultDrives operation on the 'FileSystem' provider failed.
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0c0f" />
+    <title>CENA — estúdio de vídeo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark">C</span><span>CENA</span><small>estúdio</small></div>
+        <nav class="topnav" aria-label="Navegação principal"><button class="nav-item active" data-view="editor">Editor</button><button class="nav-item" data-view="library">Biblioteca</button><button class="nav-item" data-view="providers">Provedores</button></nav>
+        <div class="top-actions"><span class="local-pill"><i></i> modo local</span><button class="icon-button" id="newProjectBtn" title="Novo projeto">+</button><button class="avatar" title="Perfil">M</button></div>
+      </header>
+
+      <main>
+        <section class="view active" id="editorView">
+          <div class="page-intro">
+            <div><p class="eyebrow">projeto em edição <span id="projectStatus">· salvo localmente</span></p><h1>Transforme uma ideia<br /><em>em cena.</em></h1></div>
+            <div class="intro-meta"><span class="project-name" id="projectName">Sem título</span><button class="text-button" id="saveProjectBtn">Salvar projeto <span>↗</span></button></div>
+          </div>
+
+          <div class="workspace-grid">
+            <aside class="brief-panel panel">
+              <div class="panel-head"><div><span class="section-kicker">01 / briefing</span><h2>O ponto de partida</h2></div><span class="step-dot">●</span></div>
+              <label class="field-label" for="topic">Tema ou roteiro</label>
+              <textarea id="topic" placeholder="Ex.: 3 maneiras de fazer seu café render mais...">Como a luz transforma uma sala comum em uma cena memorável</textarea>
+              <div class="field-help">Descreva a ideia. A IA organiza o texto em cenas, mas você continua no controle.</div>
+              <div class="settings-grid">
+                <div><label class="field-label" for="duration">Duração</label><select id="duration"><option value="15">15 segundos</option><option value="30" selected>30 segundos</option><option value="60">60 segundos</option></select></div>
+                <div><label class="field-label" for="style">Direção</label><select id="style"><option>Realista</option><option selected>Cinematográfico</option><option>Desenho</option><option>Publicidade</option></select></div>
+              </div>
+              <label class="field-label">Formato</label>
+              <div class="segmented format-options"><button class="format-option selected" data-format="vertical"><span class="ratio vertical-ratio"></span><span>9:16</span></button><button class="format-option" data-format="square"><span class="ratio square-ratio"></span><span>1:1</span></button><button class="format-option" data-format="horizontal"><span class="ratio horizontal-ratio"></span><span>16:9</span></button></div>
+              <label class="field-label" for="voice">Voz da narração <span class="free-tag">gratuita</span></label>
+              <div class="voice-row"><select id="voice"><option value="Aoede">Aoede · serena</option><option value="Kore">Kore · clara</option><option value="Puck">Puck · jovem</option><option value="Charon">Charon · grave</option></select><button class="listen-button" id="listenVoiceBtn" title="Ouvir amostra">▶</button></div>
+              <div class="mode-switch"><button class="mode selected" data-mode="animated"><span class="mode-icon">▧</span><span><b>Imagens animadas</b><small>Seu arquivo + movimento local</small></span></button><button class="mode" data-mode="ai-video"><span class="mode-icon">✦</span><span><b>Clipe gerado por IA</b><small id="videoAvailability">provedor não configurado</small></span></button></div>
+              <button class="primary-button" id="generateBtn"><span class="spark">✦</span> Gerar roteiro <span class="button-arrow">↗</span></button>
+              <div class="privacy-note"><span>⌁</span> As chaves ficam no servidor.<br />O modo local não envia seus arquivos.</div>
+            </aside>
+
+            <section class="scenes-panel panel">
+              <div class="panel-head scenes-head"><div><span class="section-kicker">02 / montagem</span><h2>Sequência de cenas <span class="scene-count" id="sceneCount">0 cenas</span></h2></div><button class="ghost-button" id="addSceneBtn">+ Adicionar</button></div>
+              <div class="timeline" id="timeline"><div class="empty-state"><span class="empty-icon">✦</span><h3>Sua sequência começa aqui</h3><p>Gere um roteiro ou adicione uma cena manualmente.</p><button class="small-button" id="emptyAddBtn">Adicionar primeira cena</button></div></div>
+              <div class="asset-drop" id="assetDrop"><input id="assetInput" type="file" accept="image/*,video/*,audio/*" multiple /><div class="drop-icon">↥</div><div><b>Solte imagens, vídeos ou áudio</b><span>PNG, JPG, MP4, WAV · até 250 MB por arquivo</span></div><button class="ghost-button">Escolher arquivos</button></div>
+            </section>
+
+            <aside class="preview-panel panel">
+              <div class="panel-head"><div><span class="section-kicker">03 / prévia</span><h2>Monitor</h2></div><span class="monitor-live"><i></i> ao vivo</span></div>
+              <div class="monitor-wrap"><div class="video-frame" id="videoFrame"><div class="frame-grain"></div><div class="frame-content"><span class="frame-number" id="frameNumber">01</span><div class="frame-title" id="frameTitle">A luz certa<br /><em>muda tudo.</em></div><div class="frame-caption" id="frameCaption">Prévia da primeira cena</div></div><div class="frame-controls"><span>00:00</span><div class="progress-line"><i></i></div><span id="frameDuration">00:30</span></div></div></div>
+              <div class="preview-controls"><button class="round-button" id="previewBtn">▶</button><div><b id="previewLabel">Prévia pronta</b><span id="previewHint">Selecione uma cena para editar</span></div><span class="format-badge" id="formatBadge">9:16</span></div>
+              <div class="volume-control"><span>narração</span><input type="range" id="voiceVolume" min="0" max="100" value="85" /><span id="voiceVolumeValue">85%</span></div>
+              <div class="volume-control"><span>trilha</span><input type="range" id="musicVolume" min="0" max="100" value="18" /><span id="musicVolumeValue">18%</span></div>
+              <div class="export-area"><button class="export-button" id="renderBtn"><span>⌁</span> Renderizar vídeo <small>FFmpeg local</small><b>↗</b></button><div class="export-links"><button id="downloadSrtBtn">Baixar SRT</button><span>·</span><button id="downloadProjectBtn">Exportar projeto</button></div></div>
+            </aside>
+          </div>
+
+          <section class="progress-panel panel" id="progressPanel"><div class="progress-top"><div><span class="section-kicker">fila local</span><h2 id="progressTitle">Pronto para começar</h2></div><span id="progressPercent">0%</span></div><div class="progress-track"><i id="progressBar"></i></div><div class="progress-steps"><span class="done" data-step="brief">Briefing</span><span data-step="script">Roteiro</span><span data-step="voice">Narração</span><span data-step="render">Render</span></div></section>
+        </section>
+
+        <section class="view" id="libraryView"><div class="page-intro compact"><div><p class="eyebrow">arquivo local</p><h1>Biblioteca <em>de projetos.</em></h1></div><button class="primary-button" id="libraryNewBtn">+ Novo projeto</button></div><div class="library-grid" id="libraryGrid"></div></section>
+
+        <section class="view" id="providersView"><div class="page-intro compact"><div><p class="eyebrow">pesquisa verificada · 09 out 2026</p><h1>Camadas <em>gratuitas.</em></h1><p class="intro-copy">A CENA separa claramente uso gratuito recorrente, créditos de teste e modelos que rodam no seu computador.</p></div></div><div class="provider-summary"><div class="summary-card confirmed"><span>✓</span><div><b>Disponível sem cobrança</b><small>Gemini texto + TTS · camada Free</small></div></div><div class="summary-card local"><span>⌂</span><div><b>Sempre local</b><small>FFmpeg · Piper · whisper.cpp</small></div></div><div class="summary-card blocked"><span>!</span><div><b>Não incluso no grátis</b><small>Imagen · Veo · clipes IA</small></div></div></div><div class="provider-table-wrap"><table class="provider-table"><thead><tr><th>Serviço</th><th>Recurso</th><th>Gratuito / limite</th><th>Cartão</th><th>Condição</th></tr></thead><tbody><tr><td><a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank">Gemini API</a><small>Google</small></td><td>Roteiro + TTS em pt-BR</td><td><span class="status-pill green">Free tier</span> modelos limitados / cotas por modelo</td><td>Não no Free</td><td>Sem faturamento; dados podem ser usados para melhorar produtos</td></tr><tr><td><a href="https://ai.google.dev/gemini-api/docs/imagen" target="_blank">Imagen / Gemini Image</a><small>Google</small></td><td>Imagens IA</td><td><span class="status-pill amber">Pago</span> Imagen 3 e modelos de imagem não estão no Free</td><td>Sim</td><td>Fica desligado no MVP</td></tr><tr><td><a href="https://ai.google.dev/gemini-api/docs/veo" target="_blank">Veo</a><small>Google</small></td><td>Clipes IA</td><td><span class="status-pill amber">Pago</span> sem camada gratuita API confirmada</td><td>Sim</td><td>Opcional; nunca ativa cobrança</td></tr><tr><td><a href="https://huggingface.co/docs/inference-providers/en/pricing" target="_blank">HF Inference Providers</a><small>Hugging Face</small></td><td>Imagens / áudio / texto</td><td><span class="status-pill amber">Teste</span> US$ 0,10/mês para conta Free, sujeito a mudança</td><td>Não para o crédito; depois é pago</td><td>Desligado por padrão após esgotar crédito</td></tr><tr><td><a href="https://github.com/rhasspy/piper" target="_blank">Piper</a><small>Open source local</small></td><td>Voz pt-BR</td><td><span class="status-pill blue">Local</span> sem custo de API</td><td>Não</td><td>Usa CPU/GPU e modelos com licenças próprias</td></tr><tr><td><a href="https://github.com/ggml-org/whisper.cpp" target="_blank">whisper.cpp</a><small>Open source local</small></td><td>Transcrição + timestamps</td><td><span class="status-pill blue">Local</span> sem custo de API</td><td>Não</td><td>Mais rápido com GPU; modelos baixados separadamente</td></tr></tbody></table></div></section>
+      </main>
+      <footer><span>CENA / 0.1</span><span>arquivos ficam no seu computador</span><button id="healthBtn">Status do servidor</button></footer>
+    </div>
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
+
+
