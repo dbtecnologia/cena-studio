@@ -1,4 +1,3 @@
-Attempting to perform the InitializeDefaultDrives operation on the 'FileSystem' provider failed.
 # CENA — estúdio local de vídeo
 
 MVP pessoal para transformar uma ideia em roteiro, cenas, narração e vídeo. A interface funciona em português brasileiro, salva projetos em SQLite local, aceita imagens/vídeos/áudios próprios e separa claramente recursos gratuitos de opções pagas ou locais.
@@ -13,10 +12,12 @@ MVP pessoal para transformar uma ideia em roteiro, cenas, narração e vídeo. A
 - Narração: endpoint de Gemini TTS no servidor; amostra local usa a voz do navegador.
 - Exportação de SRT a partir da timeline de cenas; alinhamento palavra a palavra fica preparado para `whisper.cpp`.
 - SQLite via `node:sqlite`, fila persistente em `data/queue` e worker separado.
+- Deploy hospedável preparado em Vercel com Functions para Gemini/Supabase e autenticação por e-mail/senha.
+- Supabase com RLS por usuário; a chave `service_role` não é usada no navegador nem nos endpoints públicos.
 - Renderização fora da requisição HTTP com FFmpeg local. O worker produz um MP4-base e está pronto para receber os assets do projeto.
 - Tela de provedores com classificação: camada Free recorrente, créditos de teste e modelo open source local.
 
-## Rodar
+## Rodar localmente
 
 Requer Node.js 24 ou superior. Não há dependências npm obrigatórias.
 
@@ -31,6 +32,22 @@ node server/worker.mjs
 ```
 
 Para testar sem servidor, abra `dist/index.html` diretamente; o editor, fallback local, uploads e SRT continuam disponíveis, mas as rotas Gemini/SQLite/FFmpeg não.
+
+## Publicar no GitHub e Vercel
+
+O repositório está em [github.com/dbtecnologia/cena-studio](https://github.com/dbtecnologia/cena-studio). Na Vercel, importe esse repositório e configure:
+
+```text
+SUPABASE_URL=https://qikqeooekngjrhwajwut.supabase.co
+SUPABASE_PUBLISHABLE_KEY=<chave publishable/anon do projeto>
+GEMINI_API_KEY=<opcional, servidor>
+GEMINI_TEXT_MODEL=gemini-2.5-flash
+GEMINI_TTS_MODEL=gemini-2.5-flash-preview-tts
+```
+
+O banco já possui a tabela `public.projects`, RLS e políticas por `auth.uid()`. O visitante precisa criar uma conta/entrar para sincronizar projetos; também pode escolher “Continuar só neste navegador”. Ative o provedor de e-mail do Supabase Auth se o projeto exigir confirmação de e-mail.
+
+No plano gratuito da Vercel, a versão hospedada renderiza WebM no navegador. A exportação MP4 continua disponível pelo worker local com FFmpeg, porque renderização longa e binários do FFmpeg não são apropriados para uma Function gratuita.
 
 ## FFmpeg
 
