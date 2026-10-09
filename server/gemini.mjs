@@ -1,4 +1,3 @@
-Attempting to perform the InitializeDefaultDrives operation on the 'FileSystem' provider failed.
 const apiBase = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 function keyOrThrow() {
@@ -36,12 +35,13 @@ function parseJson(text) {
 }
 
 export async function generateScript({ topic, duration, style, format }) {
-  const model = process.env.GEMINI_TEXT_MODEL || 'gemini-2.5-flash';
+  // Gemini 2.5 Flash is restricted for new API users. Keep the model
+  // configurable, but default to the current text model documented by Google.
+  const model = process.env.GEMINI_TEXT_MODEL || 'gemini-3.8-flash';
   const prompt = `Você é roteirista de vídeos curtos em português brasileiro. Crie um roteiro de ${duration} segundos sobre "${topic}". Estilo: ${style}. Formato: ${format}. Responda somente JSON válido no formato {"title": string, "scenes": [{"title": string, "visual": string, "narration": string, "duration": number}]} com 3 a 5 cenas. As durações devem somar exatamente ${duration}. Cada cena precisa ter uma narração natural e uma descrição visual objetiva para uma imagem. Não use markdown.`;
   const data = await generate(model, {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.8,
       responseMimeType: 'application/json'
     }
   });
