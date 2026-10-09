@@ -58,7 +58,60 @@ function downloadBlob(content, name, type) { const blob = content instanceof Blo
 function exportProject() { downloadBlob(JSON.stringify({ ...state, assets: state.assets.map(({ name, type }) => ({ name, type })) }, null, 2), `${slug(state.name)}.json`, 'application/json'); }
 
 async function renderVideo() { if (!state.scenes.length) return toast('Adicione cenas antes de renderizar.', 'error'); setProgress(66, 'Preparando renderização…', 'render'); try { const health = await (await apiFetch('/api/health')).json(); if (!health.ffmpeg) return renderBrowserVideo(); const response = await apiFetch('/api/render', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ projectId: state.id, duration: totalDuration(), format: state.format, scenes: state.scenes }) }); if (!response.ok) throw new Error(); const job = await response.json(); toast('Renderização MP4 enfileirada. O worker FFmpeg está processando.', 'success'); pollJob(job.id); } catch { await renderBrowserVideo(); } }
-async function renderBrowserVideo() { if (!window.MediaRecorder) return toast('Este navegador não suporta renderização local. Instale FFmpeg para gerar MP4.', 'error'); const scene = currentScene() || state.scenes[0]; const canvas = document.createElement('canvas'); const ratio = state.format === 'square' ? [720, 720] : state.format === 'horizontal' ? [1280, 720] : [720, 1280]; [canvas.width, canvas.height] = ratio; const ctx = canvas.getContext('2d'); const stream = canvas.captureStream(30); const mimeType = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type)); const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined); const chunks = []; recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data); const duration = Math.max(3, Math.min(totalDuration() || 5, 15)); const started = performance.now(); const draw = (now) => { const elapsed = (now - started) / 1000; const progress = Math.min(elapsed / duration, 1); const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); gradient.addColorStop(0, '#596a7d'); gradient.addColorStop(.45, '#293640'); gradient.addColorStop(1, '#0e1317'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = 'rgba(201,242,106,.9)'; ctx.font = `${Math.round(canvas.width * .04)}px DM Mono`; ctx.fillText('CENA / 01', canvas.width * .08, canvas.height * .12); ctx.fillStyle = '#eef0ec'; ctx.font = `600 ${Math.round(canvas.width * .075)}px Space Grotesk`; const words = String(scene.title || 'Sua cena').split(' '); words.forEach((word, index) => ctx.fillText(word, canvas.width * .08, canvas.height * (.62 + index * .09))); ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.font = `${Math.round(canvas.width * .025)}px DM Mono`; ctx.fillText(String(scene.narration || '').slice(0, 70), canvas.width * .08, canvas.height * .9); ctx.fillStyle = 'rgba(201,242,106,.85)'; ctx.fillRect(canvas.width * .08, canvas.height * .95, canvas.width * .84 * progress, 5); if (progress < 1) requestAnimationFrame(draw); else recorder.stop(); }; recorder.onstop = () => { downloadBlob(new Blob(chunks, { type: mimeType || 'video/webm' }), `${slug(state.name)}.webm`, mimeType || 'video/webm'); setProgress(100, 'Prévia renderizada no navegador', 'render'); toast('WebM renderizado e baixado. Para MP4, instale FFmpeg local.', 'success'); }; recorder.start(); requestAnimationFrame(draw); }
+async function renderBrowserVideo() {
+  if (!window.MediaRecorder) return toast('Este navegador não suporta renderização local. Instale FFmpeg para gerar MP4.', 'error');
+  const canvas = document.createElement('canvas');
+  const ratio = state.format === 'square' ? [720, 720] : state.format === 'horizontal' ? [1280, 720] : [720, 1280];
+  [canvas.width, canvas.height] = ratio;
+  const ctx = canvas.getContext('2d');
+  const stream = canvas.captureStream(30);
+  const mimeType = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type));
+  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+  const chunks = [];
+  const scenes = state.scenes.length ? state.scenes : [{ title: 'Sua cena', narration: '', visual: '', duration: 5 }];
+  const duration = Math.max(3, Math.min(totalDuration() || 5, 15));
+  const sceneStarts = scenes.reduce((acc, scene, index) => { acc.push((acc[index - 1] || 0) + (index ? Number(scenes[index - 1].duration || 1) : 0)); return acc; }, []);
+  const images = await Promise.all(scenes.map((scene) => new Promise((resolve) => {
+    if (!scene.image) return resolve(null);
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = scene.image;
+  })));
+  recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
+  const started = performance.now();
+  const draw = (now) => {
+    const elapsed = (now - started) / 1000;
+    const progress = Math.min(elapsed / duration, 1);
+    const sourceDuration = totalDuration() || duration;
+    const sourceTime = progress * sourceDuration;
+    let sceneIndex = scenes.length - 1;
+    for (let index = 0; index < scenes.length; index += 1) if (sourceTime < sceneStarts[index] + Number(scenes[index].duration || 1)) { sceneIndex = index; break; }
+    const scene = scenes[sceneIndex];
+    const image = images[sceneIndex];
+    const localProgress = Math.max(0, Math.min(1, (sourceTime - sceneStarts[sceneIndex]) / Number(scene.duration || 1)));
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#596a7d'); gradient.addColorStop(.45, '#293640'); gradient.addColorStop(1, '#0e1317');
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (image) {
+      const scale = 1.04 + localProgress * 0.08;
+      const cover = Math.max(canvas.width / image.width, canvas.height / image.height) * scale;
+      const width = image.width * cover; const height = image.height * cover;
+      const x = (canvas.width - width) * (0.5 + (localProgress - 0.5) * 0.08);
+      const y = (canvas.height - height) * (0.5 - (localProgress - 0.5) * 0.05);
+      ctx.drawImage(image, x, y, width, height);
+      ctx.fillStyle = 'rgba(10,14,18,.42)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.fillStyle = 'rgba(201,242,106,.9)'; ctx.font = `${Math.round(canvas.width * .04)}px DM Mono`; ctx.fillText(`CENA / ${String(sceneIndex + 1).padStart(2, '0')}`, canvas.width * .08, canvas.height * .12);
+    ctx.fillStyle = '#eef0ec'; ctx.font = `600 ${Math.round(canvas.width * .075)}px Space Grotesk`;
+    String(scene.title || 'Sua cena').split(' ').slice(0, 5).forEach((word, index) => ctx.fillText(word, canvas.width * .08, canvas.height * (.62 + index * .09)));
+    ctx.fillStyle = 'rgba(255,255,255,.72)'; ctx.font = `${Math.round(canvas.width * .025)}px DM Mono`; ctx.fillText(String(scene.narration || '').slice(0, 70), canvas.width * .08, canvas.height * .9);
+    ctx.fillStyle = 'rgba(201,242,106,.85)'; ctx.fillRect(canvas.width * .08, canvas.height * .95, canvas.width * .84 * progress, 5);
+    if (progress < 1) requestAnimationFrame(draw); else recorder.stop();
+  };
+  recorder.onstop = () => { downloadBlob(new Blob(chunks, { type: mimeType || 'video/webm' }), `${slug(state.name)}.webm`, mimeType || 'video/webm'); setProgress(100, 'Prévia renderizada no navegador', 'render'); toast(`${images.some(Boolean) ? 'Clipe com imagens e movimento' : 'Clipe visual local'} renderizado em WebM. Para MP4, instale FFmpeg local.`, 'success'); };
+  recorder.start(); requestAnimationFrame(draw);
+}
 async function pollJob(id) { const timer = setInterval(async () => { try { const job = await (await apiFetch(`/api/jobs/${id}`)).json(); setProgress(job.progress || 0, job.status === 'completed' ? 'Vídeo renderizado' : job.status === 'error' ? job.error : 'Renderizando com FFmpeg…', 'render'); if (job.status === 'completed' || job.status === 'error') clearInterval(timer); if (job.status === 'completed') { $('#renderBtn').onclick = () => window.open(job.output, '_blank'); toast('MP4 pronto para abrir e baixar.', 'success'); } } catch { clearInterval(timer); } }, 900); }
 
 function handleAssets(files) { [...files].forEach((file) => { const url = URL.createObjectURL(file); objectUrls.push(url); state.assets.push({ name: file.name, type: file.type, url }); if (file.type.startsWith('image/') && state.scenes[state.selected]) state.scenes[state.selected].image = url; }); renderScenes(); toast(`${files.length} arquivo(s) adicionado(s) ao projeto.`, 'success'); setStatus('arquivos locais adicionados'); }
@@ -68,6 +121,8 @@ $('#generateBtn').onclick = generateScript; $('#saveProjectBtn').onclick = saveP
 $$('.format-option').forEach((button) => button.onclick = () => { state.format = button.dataset.format; $$('.format-option').forEach((el) => el.classList.toggle('selected', el === button)); updatePreview(); }); $$('.mode').forEach((button) => button.onclick = () => { if (button.dataset.mode === 'ai-video') return toast('Clipes IA ficam opcionais: configure um provedor compatível sem cobrança para habilitar.', 'error'); state.mode = button.dataset.mode; $$('.mode').forEach((el) => el.classList.toggle('selected', el === button)); }); $$('.nav-item').forEach((button) => button.onclick = () => showView(button.dataset.view)); $('#libraryNewBtn').onclick = () => { state.id = null; state.name = 'Sem título'; state.scenes = []; $('#topic').value = ''; renderScenes(); showView('editor'); }; $('#newProjectBtn').onclick = $('#libraryNewBtn').onclick; $('#healthBtn').onclick = async () => { try { const data = await (await apiFetch('/api/health')).json(); toast(`Servidor ativo · Gemini ${data.gemini ? 'configurado' : 'sem chave'} · Supabase ${data.supabase ? 'configurado' : 'local'}.`, data.gemini ? 'success' : ''); } catch { toast('Modo estático: inicie node server/server.mjs para APIs locais.', 'error'); } }; $('#listenVoiceBtn').onclick = async () => { const sample = 'Esta é uma amostra de voz da CENA. A sua ideia começa agora.'; try { const response = await apiFetch('/api/synthesize', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: sample, voice: $('#voice').value }) }); if (!response.ok) throw new Error(); const data = await response.json(); const audio = new Audio(URL.createObjectURL(pcmToWav(data.base64))); await audio.play(); toast('Amostra gerada pelo Gemini TTS.', 'success'); } catch { const utterance = new SpeechSynthesisUtterance(sample); utterance.lang = 'pt-BR'; window.speechSynthesis.speak(utterance); toast('Amostra local do navegador reproduzida. Configure o Gemini para a narração final.'); } }; [['voiceVolume','voiceVolumeValue'],['musicVolume','musicVolumeValue']].forEach(([input, output]) => $((`#${input}`)).oninput = (event) => { $(`#${output}`).textContent = `${event.target.value}%`; }); $('#previewBtn').onclick = () => { const scene = currentScene(); if (!scene) return toast('Gere o roteiro para iniciar a prévia.', 'error'); toast(`Cena ${state.selected + 1} em prévia · ${scene.duration}s`, 'success'); };
 
 function pcmToWav(base64, sampleRate = 24000, channels = 1, bits = 16) { const binary = atob(base64); const pcm = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) pcm[i] = binary.charCodeAt(i); const header = new ArrayBuffer(44); const view = new DataView(header); const write = (offset, value) => { [...value].forEach((char, index) => view.setUint8(offset + index, char.charCodeAt(0))); }; write(0, 'RIFF'); write(8, 'WAVE'); write(12, 'fmt '); write(36, 'data'); view.setUint32(4, 36 + pcm.length, true); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channels, true); view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * channels * bits / 8, true); view.setUint16(32, channels * bits / 8, true); view.setUint16(34, bits, true); view.setUint32(40, pcm.length, true); return new Blob([header, pcm], { type: 'audio/wav' }); }
+
+$$('.mode').forEach((button) => button.onclick = () => { state.mode = button.dataset.mode; $$('.mode').forEach((el) => el.classList.toggle('selected', el === button)); if (state.mode === 'ai-video') toast('Modo clipe IA selecionado. Sem provedor IA gratuito confirmado, a exportação usa o fallback local com movimento e arquivos próprios.', ''); });
 
 $('#loginBtn').onclick = () => submitAuth('login'); $('#signupBtn').onclick = () => submitAuth('signup'); $('#continueLocalBtn').onclick = () => { localStorage.setItem('cena-local-only', '1'); $('#authGate').hidden = true; toast('Modo local ativado. Projetos ficam neste navegador.'); }; $('#authPassword').onkeydown = (event) => { if (event.key === 'Enter') submitAuth('login'); };
 
